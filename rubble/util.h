@@ -97,6 +97,7 @@ void RunServer(rocksdb::DB* db, const std::string& server_addr) {
    ServerBuilder builder;
    service.SpawnBGThreads();
 
+   builder.SetMaxReceiveMessageSize(INT_MAX);
    builder.AddListeningPort(server_addr, grpc::InsecureServerCredentials());
    std::cout << "Server listening on " << server_addr << std::endl;
    builder.RegisterService(&service);
@@ -269,12 +270,14 @@ rocksdb::DB* GetDBInstance(const string& db_path, const string& sst_dir,
       NewLogger(map_log_fname, db_options.env, map_logger);
    }
 
+   grpc::ChannelArguments ch_args;
+   ch_args.SetMaxReceiveMessageSize(-1);
    if(db_options.target_address != "") {
-      db_options.channel = grpc::CreateChannel(db_options.target_address, grpc::InsecureChannelCredentials());
+      db_options.channel = grpc::CreateCustomChannel(db_options.target_address, grpc::InsecureChannelCredentials(), ch_args);
    }
 
    if (db_options.primary_address != "") {
-      db_options.primary_channel = grpc::CreateChannel(db_options.primary_address, grpc::InsecureChannelCredentials());
+      db_options.primary_channel = grpc::CreateCustomChannel(db_options.primary_address, grpc::InsecureChannelCredentials(), ch_args);
    }
 
    if(db_options.is_rubble) {
